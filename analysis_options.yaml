@@ -1,0 +1,28 @@
+include: package:flutter_lints/flutter.yaml
+
+analyzer:
+  exclude:
+    - "**/*.graphql.dart"
+    - "**/*.g.dart"
+    - "**/*.freezed.dart"
+  errors:
+    invalid_annotation_target: ignore
+    body_might_complete_normally_nullable: ignore
+    unused_element: ignore
+  plugins:
+    - custom_lint
+
+linter:
+  rules:
+    avoid_renaming_method_parameters: false
+    prefer_relative_imports: true
+    avoid_redundant_argument_values: true
+    type_annotate_public_apis: true
+    parameter_assignments: false
+    library_private_types_in_public_api: false
+    no_leading_underscores_for_local_identifiers: false
+    use_super_parameters: true
+
+custom_lint:
+  rules:
+    - avoid_public_notifier_properties: false
