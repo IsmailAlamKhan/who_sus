@@ -1,3 +1,7 @@
+import 'dart:developer';
+
+import 'package:supabase_flutter/supabase_flutter.dart' hide User;
+
 import '../../../../core/network/supabase.dart';
 import '../../domain/entities/current_user_entity.dart';
 import '../../domain/entities/user_entity.dart';
@@ -14,8 +18,14 @@ class SupabaseUserDataSource implements UserDataSource {
     await for (final event in supabase.client.auth.onAuthStateChange) {
       final session = event.session;
       if (session != null) {
-        final user = await getUserById(session.user.id);
-        yield CurrentUserModel.authenticated(user);
+        try {
+          final user = await getUserById(session.user.id);
+          yield CurrentUserModel.authenticated(user);
+        } on PostgrestException catch (e) {
+          logout();
+          log("Get user by id failed: ${e.message}", error: e);
+          yield const CurrentUserModel.unauthenticated();
+        }
       } else {
         yield const CurrentUserModel.unauthenticated();
       }
@@ -30,7 +40,15 @@ class SupabaseUserDataSource implements UserDataSource {
   }
 
   @override
-  Future<void> logout() {
+  Future<void> logout() async {
+    final currentUser = supabase.client.auth.currentUser;
+    final isAnonymous = currentUser!.isAnonymous == true;
+    if (isAnonymous) {
+      await supabase.client.functions.invoke(
+        'delete_user',
+        body: {'uid': currentUser.id},
+      );
+    }
     return supabase.client.auth.signOut();
   }
 }

@@ -16,18 +16,26 @@ part 'current_user_controller.g.dart';
 class CurrentUserController extends _$CurrentUserController {
   late GetCurrentUserUseCase _getCurrentUserUseCase;
   late LogoutUseCase _logoutUseCase;
-  final StreamController<CurrentUser> _streamController = StreamController<CurrentUser>.broadcast();
+  final _streamController = StreamController<CurrentUser>.broadcast();
   @override
   CurrentUser build() {
     _getCurrentUserUseCase = ref.read(getCurrentUserUseCaseProvider);
     _logoutUseCase = ref.read(logOutUseCaseProvider);
+    _streamController.stream.listen((event) => state = event);
+
+    ref.onDispose(() => _streamController.close());
+
     return const CurrentUserModel.unauthenticated();
   }
 
   Future<void> init() {
-    _getCurrentUserUseCase(const NoParams()).listen((event) {
+    final sub = _getCurrentUserUseCase(const NoParams()).listen((event) {
       event.fold(_streamController.addError, _streamController.add);
     });
+    _streamController.onCancel = () {
+      sub.cancel();
+    };
+
     return _streamController.stream.first;
   }
 
